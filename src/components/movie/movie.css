@@ -1,0 +1,42 @@
+.wrraper {
+  display: flex;
+  width: 454px;
+  height: 281px;
+  justify-content: space-between;
+}
+
+.name-movie {
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 28px;
+}
+
+.date-movie {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 22px;
+  color: #827e7e;
+}
+
+.genre-list {
+  display: flex;
+}
+
+.genre-movie {
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 15px;
+  color: rgba(0, 0, 0, 0.65);
+  background: #fafafa;
+  border: 1px solid #d9d9d9;
+  border-radius: 2px;
+  margin-right: 8px;
+}
+
+.description-movie {
+  width: 228px;
+  height: 129px;
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 22px;
+}
