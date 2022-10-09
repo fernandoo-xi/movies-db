@@ -1,99 +1,117 @@
-import { Row } from 'antd';
-import React, { Component } from 'react';
+import { Component } from 'react';
+import 'antd/dist/antd.min.css';
+import { Alert, Pagination } from 'antd';
+import { Offline } from 'react-detect-offline';
 
-import NetworkState from '../network-state';
-import Movie from '../movie';
-import 'antd/dist/antd.css';
 import './app.css';
-import ErrorIndicator from '../error-indicator';
-import SearchForm from '../search-form';
-import MoviePagination from '../pagination';
-import MovieApiService from '../services/movie-db-service';
+import CardList from '../cardList/cardList';
+import Header from '../header';
+import MoviesServise from '../../services/MoviesServise';
+import GenresContext from '../genresContext';
 
 export default class App extends Component {
-  movieApiService = new MovieApiService();
+  constructor() {
+    super();
 
-  state = {
-    network: true,
-    info: {},
-    loading: true,
-    query: 'The way Back',
-  };
+    this.moviesServise = new MoviesServise();
+
+    this.state = {
+      pageNumber: 1,
+      totalResults: 0,
+      searchQuery: '',
+      selectedTab: 'search',
+      guestSessionId: null,
+      genresList: null,
+      isError: false,
+    };
+  }
 
   componentDidMount() {
-    this.updateInformation(this.state.query);
+    this.moviesServise.getGenres().then((genres) => {
+      this.genresListHandler(genres);
+    });
+
+    this.moviesServise.setGuestSesion().then((id) => {
+      this.guestSessionIdHandler(id);
+    });
   }
 
-  componentDidUpdate(prevProps) {
-    if (this.props.query != prevProps.query) {
-      this.updateInformation(this.state.query);
-    }
+  componentDidCatch() {
+    this.setState({ isError: true });
   }
 
-  onMovieLoaded = (info) => {
+  makeHandler = (entery, value) => {
     this.setState({
-      info,
-      loading: false,
-      error: false,
+      [entery]: value,
     });
   };
 
-  changeQuery = (value) => {
-    this.setState({
-      query: value,
-    });
-  };
+  paginationHandler = (pageNumber) => this.makeHandler('pageNumber', pageNumber);
 
-  onError = () => {
-    this.setState({
-      error: true,
-      loading: false,
-    });
-  };
+  totalResultsHandler = (count) => this.makeHandler('totalResults', count);
 
-  updateInformation = (value) => {
-    this.changeQuery(value);
-    this.movieApiService.getText(this.state.query).then(this.onMovieLoaded).catch(this.onError);
-  };
+  inputHandler = (value) => this.makeHandler('searchQuery', value);
 
-  onNetworkState = () => {
-    this.setState((prevState) => ({ network: !prevState.network }));
-  };
+  selectedTabHandler = (value) => this.makeHandler('selectedTab', value);
+
+  genresListHandler = (obj) => this.makeHandler('genresList', obj);
+
+  guestSessionIdHandler = (id) => this.makeHandler('guestSessionId', id);
 
   render() {
-    const { network, info, loading, error } = this.state;
+    const { pageNumber, totalResults, searchQuery, selectedTab, guestSessionId, genresList, isError } = this.state;
 
-    const errorMessage = !network ? <ErrorIndicator /> : null;
-    const contentApp = network ? (
-      <AppView info={info} loading={loading} error={error} updateInformation={this.updateInformation} />
-    ) : null;
+    if (isError) {
+      return (
+        <Alert
+          className="error"
+          message="Oops... something went wrong"
+          description="Fatal error, try again later"
+          type="error"
+          showIcon
+        />
+      );
+    }
+
     return (
-      <>
-        <NetworkState onNetworkState={this.onNetworkState} />
-        {errorMessage}
-        {contentApp}
-      </>
+      <div className="app">
+        <Header
+          inputHandler={this.inputHandler}
+          inputValue={searchQuery}
+          selectedTabHandler={this.selectedTabHandler}
+          selectedTab={selectedTab}
+          paginationHandler={this.paginationHandler}
+          pageNumber={pageNumber}
+        />
+        <Offline>
+          <Alert
+            type="warning"
+            message="Oops.. "
+            description="Problems with internet connection"
+            showIcon
+            className="warning"
+          />
+        </Offline>
+        <GenresContext.Provider value={genresList}>
+          <CardList
+            pageNumber={pageNumber}
+            paginationHandler={this.paginationHandler}
+            totalResultsHandler={this.totalResultsHandler}
+            searchQuery={searchQuery}
+            guestSessionId={guestSessionId}
+            selectedTab={selectedTab}
+            selectedTabHandler={this.selectedTabHandler}
+          />
+        </GenresContext.Provider>
+        <Pagination
+          className="pagination"
+          current={pageNumber}
+          onChange={(num) => this.paginationHandler(num)}
+          total={Math.min(totalResults, 500 * 20)}
+          pageSize={20}
+          hideOnSinglePage
+        />
+      </div>
     );
   }
 }
-
-const AppView = ({ info, loading, error, updateInformation }) => {
-  return (
-    <>
-      <SearchForm updateInformation={updateInformation} />
-      <Row justify="space-evenly">
-        <Movie info={info} loading={loading} error={error} />
-        <Movie info={info} loading={loading} error={error} />
-      </Row>
-      <Row justify="space-evenly">
-        <Movie info={info} loading={loading} error={error} />
-        <Movie info={info} loading={loading} error={error} />
-      </Row>
-      <Row justify="space-evenly">
-        <Movie info={info} loading={loading} error={error} />
-        <Movie info={info} loading={loading} error={error} />
-      </Row>
-      <MoviePagination />
-    </>
-  );
-};
